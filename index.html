@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0b5d57">
+<meta name="description" content="Hyderabad bus timings at a glance (demo data).">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="HYD Bus">
+<title>HYD Bus Timings</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --brand: #0b5d57;
+    --brand-2: #14897f;
+    --accent: #f4a300;
+    --bg: #f2f5f4;
+    --card: #ffffff;
+    --ink: #13201e;
+    --muted: #6b7b78;
+    --line: #e2e9e7;
+    --danger: #d64541;
+  }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Telugu", "Nirmala UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+  header {
+    background: linear-gradient(160deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    padding: 22px 18px 74px;
+    position: relative;
+  }
+  .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: 0.2px; }
+  .te { font-size: 14px; opacity: 0.9; margin-top: 2px; }
+  .badge {
+    background: var(--accent);
+    color: #3a2a00;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 9px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+  }
+  .clock { margin-top: 10px; font-size: 13px; opacity: 0.85; }
+
+  .search-wrap { margin: -52px 14px 0; position: relative; z-index: 2; }
+  .search {
+    width: 100%;
+    border: none;
+    border-radius: 16px;
+    padding: 15px 16px 15px 44px;
+    font-size: 16px;
+    background: var(--card);
+    box-shadow: 0 8px 22px rgba(11, 93, 87, 0.15);
+    color: var(--ink);
+    outline: none;
+  }
+  .search:focus { box-shadow: 0 0 0 3px rgba(20, 137, 127, 0.35), 0 8px 22px rgba(11, 93, 87, 0.15); }
+  .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 17px; color: var(--muted); pointer-events: none;
+  }
+  .hint { font-size: 12px; color: var(--muted); margin: 8px 6px 0; }
+
+  .tabs { display: flex; gap: 8px; margin: 14px 14px 4px; }
+  .tab {
+    flex: 1; border: 1px solid var(--line); background: var(--card);
+    padding: 10px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    color: var(--muted); cursor: pointer;
+  }
+  .tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+  main { padding: 8px 14px 30px; }
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 2px 10px rgba(19, 32, 30, 0.06);
+  }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .route { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .stop { min-width: 0; }
+  .stop b { display: block; font-size: 16px; line-height: 1.2; }
+  .stop small { color: var(--muted); font-size: 12px; }
+  .arrow { color: var(--brand-2); font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .star {
+    border: none; background: #f1f5f4; width: 40px; height: 40px; border-radius: 12px;
+    font-size: 20px; cursor: pointer; color: #b8c4c1; flex-shrink: 0;
+  }
+  .star.on { background: #fff6dc; color: var(--accent); }
+
+  .next {
+    margin-top: 14px;
+    background: linear-gradient(120deg, #e7f5f3, #f3faf9);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .next .lbl { font-size: 12px; color: var(--muted); }
+  .cd { font-size: 26px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+  .cd.soon { color: var(--danger); }
+  .at { font-size: 13px; color: var(--muted); text-align: right; }
+  .at b { color: var(--ink); font-size: 15px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    font-size: 12px; background: #f1f5f4; color: var(--ink);
+    padding: 5px 10px; border-radius: 999px; font-variant-numeric: tabular-nums;
+  }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  details { margin-top: 10px; }
+  summary { font-size: 13px; color: var(--brand); font-weight: 600; cursor: pointer; }
+  ol { margin: 8px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink); columns: 2; }
+  li { margin-bottom: 4px; break-inside: avoid; }
+
+  .empty {
+    text-align: center; color: var(--muted); padding: 40px 10px; font-size: 14px;
+  }
+  .foot {
+    text-align: center; font-size: 12px; color: var(--muted); padding: 8px 14px 30px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <div>
+      <h1>HYD Bus Timings</h1>
+      <div class="te">హైదరాబాద్ బస్ సమయాలు</div>
+    </div>
+    <span class="badge">Demo data</span>
+  </div>
+  <div class="clock" id="clock"></div>
+</header>
+
+<div class="search-wrap">
+  <span class="search-icon">&#128269;</span>
+  <input id="q" class="search" type="search" placeholder="Route / stop వెతకండి (e.g. Ameerpet, Madhapur)" autocomplete="off">
+</div>
+<div class="hint" style="padding:0 20px">Try: "Ameerpet", "Kukatpally", "అమీర్‌పేట్"</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="all">అన్నీ · All</button>
+  <button class="tab" data-tab="fav">ఇష్టమైనవి · Favorites</button>
+</div>
+
+<main id="list"></main>
+
+<div class="foot">
+  Timings are generated from a demo schedule, not live TSRTC data.<br>
+  TSRTC has no public live API. This is a prototype only.
+</div>
+
+<script>
+  // ---------- Demo data (not real TSRTC schedules) ----------
+  const ROUTES = [
+    {
+      id: "SC-AM", from: "Secunderabad", fromTe: "సికింద్రాబాద్", to: "Ameerpet", toTe: "అమీర్‌పేట్",
+      first: "05:30", last: "22:30", freq: 12, fare: 20,
+      stops: ["Secunderabad Jubilee Bus Stn", "Paradise", "Begumpet", "Punjagutta", "Somajiguda", "Panjagutta X Roads", "SR Nagar", "Ameerpet"]
+    },
+    {
+      id: "KPHB-MP", from: "Kukatpally", fromTe: "కూకట్‌పల్లి", to: "Madhapur", toTe: "మాదాపూర్",
+      first: "06:00", last: "22:00", freq: 15, fare: 20,
+      stops: ["Kukatpally", "KPHB Colony", "JNTU", "Miyapur X Roads", "Hafeezpet", "Chandanagar", "Gachibowli", "Madhapur"]
+    },
+    {
+      id: "DSN-HT", from: "Dilsukhnagar", fromTe: "దిల్‌సుఖ్‌నగర్", to: "Hitech City", toTe: "హైటెక్ సిటీ",
+      first: "05:45", last: "23:00", freq: 10, fare: 25,
+      stops: ["Dilsukhnagar", "Malakpet", "Chaderghat", "Abids", "Nampally", "Mehdipatnam", "Tolichowki", "Gachibowli", "Hitech City"]
+    },
+    {
+      id: "MGBS-GC", from: "MGBS", fromTe: "ఎంజీబీఎస్", to: "Gachibowli", toTe: "గచ్చిబౌలి",
+      first: "06:15", last: "21:45", freq: 20, fare: 30,
+      stops: ["MGBS", "Musheerabad", "Ameerpet", "Erragadda", "Kondapur", "Gachibowli"]
+    },
+    {
+      id: "UPL-BP", from: "Uppal", fromTe: "ఉప్పల్", to: "Begumpet", toTe: "బేగంపేట్",
+      first: "05:50", last: "22:15", freq: 14, fare: 20,
+      stops: ["Uppal X Roads", "Habsiguda", "Tarnaka", "Secunderabad", "Paradise", "Begumpet"]
+    },
+    {
+      id: "CHM-HT", from: "Charminar", fromTe: "చార్మినార్", to: "Hitech City", toTe: "హైటెక్ సిటీ",
+      first: "06:30", last: "21:30", freq: 25, fare: 35,
+      stops: ["Charminar", "Shah Ali Banda", "Falaknuma", "Mehdipatnam", "Attapur", "Shaikpet", "Hitech City"]
+    }
+  ];
+
+  const STORE_KEY = "hydbus_favs";
+  let favs = loadFavs();
+  let tab = "all";
+  let query = "";
+
+  function loadFavs() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; }
+  }
+  function saveFavs() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(favs)); } catch (e) {}
+  }
+
+  // ---------- time helpers ----------
+  function toMin(hhmm) {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  }
+  function fmtClock(totalMin) {
+    const m = ((Math.floor(totalMin) % 1440) + 1440) % 1440;
+    const h = Math.floor(m / 60), mm = m % 60;
+    return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+  }
+  function nowMin() {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  }
+
+  // Build the next few departures. Values above 1440 mean "tomorrow".
+  function nextDepartures(r, nm) {
+    const first = toMin(r.first), last = toMin(r.last);
+    const today = [];
+    for (let t = first; t <= last; t += r.freq) today.push(t);
+    let upcoming = today.filter(t => t > nm);
+    if (upcoming.length < 4) {
+      const tomorrow = today.map(t => t + 1440);
+      upcoming = upcoming.concat(tomorrow);
+    }
+    return upcoming.slice(0, 4);
+  }
+
+  function fmtCountdown(diffMin) {
+    const totalSec = Math.max(0, Math.round(diffMin * 60));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return h + "h " + String(m).padStart(2, "0") + "m";
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  // ---------- rendering ----------
+  function matches(r, q) {
+    if (!q) return true;
+    const hay = [r.from, r.fromTe, r.to, r.toTe, ...r.stops].join(" ").toLowerCase();
+    return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+  }
+
+  function visibleRoutes() {
+    return ROUTES.filter(r => matches(r, query))
+                 .filter(r => tab === "all" || favs.includes(r.id));
+  }
+
+  function render() {
+    const list = document.getElementById("list");
+    const rs = visibleRoutes();
+    if (rs.length === 0) {
+      const msg = tab === "fav" && favs.length === 0
+        ? "ఇంకా ఇష్టమైనవి లేవు. ⭐ నొక్కి జోడించండి.<br><small>No favorites yet. Tap the star on a route.</small>"
+        : "ఏ రూట్ కనబడలేదు.<br><small>No route found for this search.</small>";
+      list.innerHTML = '<div class="empty">' + msg + '</div>';
+      return;
+    }
+    list.innerHTML = rs.map(r => {
+      const isFav = favs.includes(r.id);
+      const stopsHtml = r.stops.map(s => "<li>" + s + "</li>").join("");
+      return `
+        <article class="card" data-id="${r.id}">
+          <div class="card-top">
+            <div class="route">
+              <div class="stop"><b>${r.from}</b><small>${r.fromTe}</small></div>
+              <div class="arrow">&rarr;</div>
+              <div class="stop"><b>${r.to}</b><small>${r.toTe}</small></div>
+            </div>
+            <button class="star ${isFav ? "on" : ""}" data-star="${r.id}" aria-label="favorite">${isFav ? "&#9733;" : "&#9734;"}</button>
+          </div>
+          <div class="next">
+            <div>
+              <div class="lbl">తదుపరి బస్ · Next bus in</div>
+              <div class="cd">--:--</div>
+            </div>
+            <div class="at">at<br><b class="at-time">--:--</b></div>
+          </div>
+          <div class="chips"></div>
+          <div class="meta">Every ${r.freq} min · ₹${r.fare} (demo fare) · ${r.first} to ${r.last}</div>
+          <details>
+            <summary>మార్గంలో స్టాప్‌లు · Stops (${r.stops.length})</summary>
+            <ol>${stopsHtml}</ol>
+          </details>
+        </article>`;
+    }).join("");
+    updateCountdowns();
+  }
+
+  function updateCountdowns() {
+    const nm = nowMin();
+    ROUTES.forEach(r => {
+      const card = document.querySelector(`.card[data-id="${r.id}"]`);
+      if (!card) return;
+      const deps = nextDepartures(r, nm);
+      const next = deps[0];
+      const diff = next - nm;
+      const cd = card.querySelector(".cd");
+      cd.textContent = fmtCountdown(diff);
+      cd.classList.toggle("soon", diff < 3);
+      card.querySelector(".at-time").textContent = fmtClock(next);
+      card.querySelector(".chips").innerHTML = deps.slice(1).map(t =>
+        '<span class="chip">' + fmtClock(t) + '</span>').join("");
+    });
+    // clock in header
+    const d = new Date();
+    document.getElementById("clock").textContent =
+      "ఇప్పుడు · Now " + d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) +
+      " IST (demo schedule)";
+  }
+
+  // ---------- events ----------
+  document.getElementById("q").addEventListener("input", e => {
+    query = e.target.value.trim();
+    render();
+  });
+
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      tab = btn.dataset.tab;
+      document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b === btn));
+      render();
+    });
+  });
+
+  document.getElementById("list").addEventListener("click", e => {
+    const star = e.target.closest("[data-star]");
+    if (!star) return;
+    const id = star.dataset.star;
+    favs = favs.includes(id) ? favs.filter(x => x !== id) : favs.concat(id);
+    saveFavs();
+    render();
+  });
+
+  render();
+  setInterval(updateCountdowns, 1000);
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
